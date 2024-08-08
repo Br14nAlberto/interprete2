@@ -1,0 +1,117 @@
+package fes.aragon.compilador;
+import java_cup.runtime.*;
+import java.io.*;
+import java.util.*;
+
+action code{:
+	public Archivo archivoSalida = 
+	new Archivo(new File(System.getProperty("user.dir")+"/salida.fes"));
+	private ArrayList<String> repite = new ArrayList<String>();
+	private ArrayList<String> ver = new ArrayList<String>();
+	private ArrayList<String> aux = new ArrayList<String>();
+	
+	public void almacenar(String datos,boolean valor){
+		archivoSalida.escribir(datos,valor);
+	}
+	
+	public void guardarRepetir(ArrayList<String> l1, int numR){
+		for (int k = 0; k < numR; k++) {
+			for (int i = 0; i < l1.size(); i++) {
+				almacenar(l1.get(i), true);
+			}
+		}	
+	}
+	
+	public void guardarRepetir2(ArrayList<String> l1, int numR){
+		for (int k = 0; k < numR; k++) {
+			for (int i = 0; i < l1.size(); i++) {
+				aux.add(l1.get(i));
+			}
+		}	
+	}
+	
+	public void guardarVer(ArrayList<String> l1){
+		for (int i = 0; i < l1.size(); i++) {
+			almacenar(l1.get(i), true);
+		}
+	}
+	
+	public void imprimirValor(String str){
+		System.out.println("Valor del token es: "+str);
+	}
+:};
+parser code{:
+	public static Lexico lex;
+	public void syntax_error(Symbol st){
+		System.out.println("Error en la linea "+ lex.getYyline() +
+                    " columna: "+ lex.getYy_currentPos());
+	}
+	public void cargar(String archivo) throws Exception{	
+		lex=new Lexico(new FileInputStream(new File(archivo)));
+		new parser(lex).parse();
+	}
+:};
+terminal COLOCA, MOVER, ARRIBA, ABAJO, IZQUIERDA;
+terminal DERECHA, LLLAVE, RLLAVE, REPETIR, VFRUTA;
+terminal ESPACIO, PUNTOYCOMA;
+terminal Integer NUMERO;
+
+non terminal S,E, entero, ins, ins2, ins3, ins4, ins5, ins6;
+
+precedence left COLOCA, MOVER;
+precedence left ARRIBA, ABAJO, IZQUIERDA;
+precedence left DERECHA, LLLAVE, RLLAVE, REPETIR, VFRUTA;
+
+S ::= S E
+	| E
+	|error {:;:};
+
+E ::= COLOCA ESPACIO entero:e1 ESPACIO entero:e2 PUNTOYCOMA{: almacenar("coloca " + String.valueOf(e1) + " " + String.valueOf(e2), true); :}
+      | ARRIBA PUNTOYCOMA{: almacenar("arriba", true); :}
+      | ABAJO PUNTOYCOMA{: almacenar("abajo", true); :}
+      | IZQUIERDA PUNTOYCOMA{: almacenar("izquierda", true); :}
+      | DERECHA PUNTOYCOMA{: almacenar("derecha", true); :}
+      | MOVER ESPACIO entero:e1 PUNTOYCOMA{: almacenar("mover " + String.valueOf(e1),true); :}
+      | REPETIR ESPACIO entero:e1 LLLAVE ins:s RLLAVE {:
+       		guardarRepetir(repite, (int) e1);
+       		repite.clear();
+       		ver.clear();
+       :}
+      | VFRUTA LLLAVE ins3 RLLAVE {: 
+      	ver.add(0,"ver");
+      	ver.addAll(aux);
+      	guardarVer(ver);
+      	ver.clear();
+      	repite.clear();
+      	aux.clear();
+      	:}
+      | NUMERO:n {:RESULT=n;:};
+
+ins ::= ins ins2
+		| ins2;
+		
+ins3 ::= ins3 ins4
+		| ins4;
+
+ins2 ::= COLOCA ESPACIO entero:e1 ESPACIO entero:e2 PUNTOYCOMA{: repite.add("coloca " + String.valueOf(e1) + " " + String.valueOf(e2)); :}
+      	| ARRIBA PUNTOYCOMA{: repite.add("arriba"); :}
+      	| ABAJO PUNTOYCOMA{: repite.add("abajo"); :}
+      	| IZQUIERDA PUNTOYCOMA{: repite.add("izquierda"); :}
+      	| DERECHA PUNTOYCOMA{: repite.add("derecha"); :}
+      	| MOVER ESPACIO entero:e1 PUNTOYCOMA{: repite.add("mover " + String.valueOf(e1)); :}
+      	| VFRUTA LLLAVE ins3 RLLAVE {:
+      		ver.add(0,"ver");
+      		repite.addAll(ver);
+      		:};
+      	
+ins4 ::= COLOCA ESPACIO entero:e1 ESPACIO entero:e2 PUNTOYCOMA{: ver.add("coloca " + String.valueOf(e1) + " " + String.valueOf(e2)); :}
+      	| ARRIBA PUNTOYCOMA{: ver.add("arriba"); :}
+      	| ABAJO PUNTOYCOMA{: ver.add("abajo"); :}
+      	| IZQUIERDA PUNTOYCOMA{: ver.add("izquierda"); :}
+      	| DERECHA PUNTOYCOMA{: ver.add("derecha"); :}
+      	| MOVER ESPACIO entero:e1 PUNTOYCOMA{: ver.add("mover " + String.valueOf(e1)); :}
+      	| REPETIR ESPACIO entero:e1 LLLAVE ins:s RLLAVE {:
+       		guardarRepetir2(repite, (int) e1);
+       :};
+
+entero ::= NUMERO:n {:RESULT=n;:};

@@ -1,0 +1,17 @@
+colocar 4 4;
+derecha;
+mover 2;
+repetir 3{
+	abajo;
+	ver fruta{
+		arriba;
+	}
+}
+abajo;
+mover 3;
+ver fruta{
+	izquierda;
+	repetir 3{
+		abajo;
+	}
+}
